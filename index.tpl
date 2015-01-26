@@ -1,5 +1,6 @@
 <%
 from collections import Counter
+from datetime import datetime, time
 
 states = [
 	('complete', 'success'),
@@ -31,7 +32,7 @@ states = [
 							P{{ p.paper_no }}: {{ p.name }} - sheet {{ p.sheet_no }}
 						</h2>
 						% if p.questions:
-							<div class="progress">
+							<div class="progress" style="margin-bottom: 10px" title="Question progress">
 								<%
 								counts = Counter(q.progress_status for q in p.questions)
 								counts = [(counts[k], cls) for k, cls in states if counts[k] and cls ]
@@ -42,6 +43,17 @@ states = [
 										{{ cnt }}
 									</div>
 								% end
+							</div>
+						% end
+						% if p.issue_date:
+							<div class="progress" style="height: 10px" title="Time since issue">
+								<%
+								spent = (datetime.now() - datetime.combine(p.issue_date, time())).total_seconds()
+								allocated = (p.class_date - p.issue_date).total_seconds()
+								%>
+								<div class="progress-bar progress-bar-striped"
+								     style="width: {{ spent / allocated * 100 }}%; background-color: #777">
+								</div>
 							</div>
 						% end
 						<p>Issued {{ p.issue_date }}, due {{ p.class_date }}</p>
@@ -81,10 +93,14 @@ states = [
 			% for p in in_progress_papers:
 				% make_paper(p)
 			% end
-			<h2>Done</h2>
-			% for p in done_papers:
-				% make_paper(p)
-			% end
+		</div>
+		<div class="well" style="border-left: none; border-right: none; border-radius: 0;">
+			<div class="container">
+				<h2>Done</h2>
+				% for p in done_papers:
+					% make_paper(p)
+				% end
+			</div>
 		</div>
 	</body>
 </html>
