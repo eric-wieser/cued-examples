@@ -29,7 +29,7 @@ states = [
 				<div class="row">
 					<div class="col-md-6">
 						<h2>
-							P{{ p.paper_no }}: {{ p.name }} - sheet {{ p.sheet_no }}
+							P{{ p.paper_no }}: {{ p.name }} <small>examples paper {{ p.sheet_no }}</small>
 						</h2>
 						% if p.questions:
 							<div class="progress" style="margin-bottom: 10px" title="Question progress">
