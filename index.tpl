@@ -1,17 +1,63 @@
 <%
 from collections import Counter
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 states = [
-	('complete', 'success'),
-	('needs review', 'warning'),
-	('skipped', 'danger'),
-	('unattempted', '')
+	('complete',
+		'success',
+		'glyphicon glyphicon-ok'),
+	('needs review',
+		'warning',
+		'glyphicon glyphicon-question-sign'),
+	('skipped',
+		'danger',
+		'glyphicon glyphicon-remove'),
+	('unattempted',
+		'',
+		'glyphicon glyphicon-unchecked')
 ]
 %>
 <html>
 	<head>
 		<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet">
+		<style>
+			.multi-radio input {
+				display: none;
+			}
+			.multi-radio label {
+				display: none;
+				cursor: pointer;
+				-webkit-touch-callout: none;
+				-webkit-user-select: none;
+				-khtml-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				user-select: none;
+			}
+			.multi-radio label a {
+				display: block;
+			}
+			.multi-radio input:checked + label {
+				display: block;
+			}
+
+			.progress-multi .progress {
+				margin: 0;
+				border-radius: 0;
+			}
+
+			.progress-multi {
+				margin-bottom: 10px;
+			}
+			.progress-multi .progress:first-child {
+				border-top-left-radius: 4px;
+				border-top-right-radius: 4px;
+			}
+			.progress-multi .progress:last-child {
+				border-bottom-left-radius: 4px;
+				border-bottom-right-radius: 4px;
+			}
+		</style>
 	</head>
 	<body>
 		<div class="container">
@@ -26,80 +72,106 @@ states = [
 			]
 			%>
 			% def make_paper(p):
-				<div class="row">
-					<div class="col-md-6">
-						<h2>
-							P{{ p.paper_no }}: {{ p.name }} <small>examples paper {{ p.sheet_no }}</small>
-						</h2>
-						% if p.questions:
-							<div class="progress" style="margin-bottom: 10px" title="Question progress">
-								<%
-								counts = Counter(q.progress_status for q in p.questions)
-								counts = [(counts[k], cls) for k, cls in states if counts[k] and cls ]
-								%>
-								% for i, (cnt, cls) in enumerate(counts):
-									<div class="progress-bar progress-bar-{{cls}}"
-									     style="width: {{ cnt * 100.0 / len(p.questions) }}%;">
-										{{ cnt }}
-									</div>
-								% end
-							</div>
-						% end
-						% if p.issue_date:
-							<div class="progress" style="height: 10px" title="Time since issue">
-								<%
-								spent = (datetime.now() - datetime.combine(p.issue_date, time())).total_seconds()
-								allocated = (p.class_date - p.issue_date).total_seconds()
-								%>
-								<div class="progress-bar progress-bar-striped"
-								     style="width: {{ spent / allocated * 100 }}%; background-color: #777">
-								</div>
-							</div>
-						% end
-						<p>Issued {{ p.issue_date }}, due {{ p.class_date }}</p>
-						<a class="btn btn-default pull-left" href='/paper/{{ p.id }}/edit'>Edit paper details</a>
-					</div>
+				<h2>
+					P{{ p.paper_no }}: {{ p.name }}
+					<a href='/paper/{{ p.id }}/edit' title="Edit paper details">
+						<small>examples paper {{ p.sheet_no }}</small>
+					</a>
+				</h2>
+				<div class="progress-multi">
 					% if p.questions:
-						<form class="col-md-6" method="post">
-							<table class="table table-condensed">
-								<thead>
+						<div class="progress" title="Question progress">
+							<%
+							counts = Counter(q.progress_status for q in p.questions)
+							counts = [(counts[k], cls) for k, cls, icon in states if counts[k] and cls ]
+							%>
+							% for i, (cnt, cls) in enumerate(counts):
+								<div class="progress-bar progress-bar-{{cls}}"
+								     style="width: {{ cnt * 100.0 / len(p.questions) }}%;">
+									{{ cnt }}
+								</div>
+							% end
+						</div>
+					% end
+					<%
+					if p.issue_date:
+						i = p.issue_date
+					else:
+						i = datetime.now().date() - timedelta(days=14)
+					end
+					spent = (datetime.now() - datetime.combine(i, time())).total_seconds()
+					allocated = (p.class_date - i).total_seconds()
+					progress_t = spent / allocated
+					%>
+					<div class="progress" style="height: 10px" title="Issued {{ p.issue_date or 'last term'}}, due {{ p.class_date }}">
+						<div class="progress-bar progress-bar-striped"
+						     style="width: {{ spent / allocated * 100 }}%; background-color: #777">
+						</div>
+					</div>
+				</div>
+				% if p.questions:
+					<form method="post" class="row">
+						<div class="col-xs-10">
+							<div class="table-responsive">
+								<table class="table table-condensed" style="table-layout: fixed">
+									<thead>
+										<tr>
+											% for q in p.questions:
+												<th>Q{{ q.number }}</th>
+											% end
+										</tr>
+									</thead>
 									<tr>
-										<th></th>
 										% for q in p.questions:
-											<th>Q{{ q.number }}</th>
-										% end
-									</tr>
-								</thead>
-								% for name, class_name in states:
-									<tr class="{{ class_name }}">
-										<th>{{ name.title() }}</th>
-										% for q in p.questions:
-											<td>
-												<label style="display: block">
-													<input type="radio" name="paper{{ p.id }}-q{{ q.number }}" value="{{ name }}"
-												       {{'checked' if q.progress_status == name else '' }}/>
-												</label>
+											<td class="multi-radio">
+												% for i, (name, class_name, icon) in enumerate(states):
+													% next_name, _, _ = states[(i+1) % len(states)]
+													<div>
+														<input type="radio"
+														       name="paper{{ p.id }}-q{{ q.number }}-b"
+														       id="paper{{ p.id }}-q{{ q.number }}-{{name}}"
+														       value="{{ name }}"
+														       {{'checked' if q.progress_status == name else '' }}/>
+														<label title="{{ name }}" for="paper{{ p.id }}-q{{ q.number }}-{{next_name}}">
+															<a class="text-{{ class_name or 'muted' }}">
+																<span class="{{ icon }}"></span>
+															</a>
+														</label>
+													</div>
+												% end
 											</td>
 										% end
 									</tr>
-								% end
-							</table>
-							<button class="btn btn-default pull-right" type="submit">Save</button>
-						</form>
-					% end
-				</div>
+								</table>
+							</div>
+						</div>
+						<div class="col-xs-2">
+							<button class="btn btn-default btn-block" type="submit">
+								Save
+							</button>
+						</div>
+					</form>
+				% end
 			% end
 			<h2>In progress</h2>
-			% for p in in_progress_papers:
-				% make_paper(p)
-			% end
+			<div class="row">
+				% for p in in_progress_papers:
+					<div class="col-md-6">
+						% make_paper(p)
+					</div>
+				% end
+			</div>
 		</div>
 		<div class="well" style="border-left: none; border-right: none; border-radius: 0;">
 			<div class="container">
 				<h2>Done</h2>
-				% for p in done_papers:
-					% make_paper(p)
-				% end
+				<div class="row">
+					% for p in done_papers:
+						<div class="col-md-6">
+							% make_paper(p)
+						</div>
+					% end
+				</div>
 			</div>
 		</div>
 	</body>
