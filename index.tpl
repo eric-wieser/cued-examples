@@ -128,7 +128,7 @@ states = [
 													% next_name, _, _ = states[(i+1) % len(states)]
 													<div>
 														<input type="radio"
-														       name="paper{{ p.id }}-q{{ q.number }}-b"
+														       name="paper{{ p.id }}-q{{ q.number }}"
 														       id="paper{{ p.id }}-q{{ q.number }}-{{name}}"
 														       value="{{ name }}"
 														       {{'checked' if q.progress_status == name else '' }}/>
