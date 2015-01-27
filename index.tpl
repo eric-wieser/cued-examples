@@ -57,6 +57,18 @@ states = [
 				border-bottom-left-radius: 4px;
 				border-bottom-right-radius: 4px;
 			}
+			.clip .inner {
+				text-overflow: ellipsis;
+				display: block;
+				white-space: nowrap;
+				overflow: hidden;
+			}
+			.clip .right {
+				float: right;
+				padding-top: 10px;
+			}
+
+			form {margin :0;}
 		</style>
 	</head>
 	<body>
@@ -70,13 +82,14 @@ states = [
 			done_papers = [
 				p for p in papers if p not in in_progress_papers
 			]
+			done_papers.sort(key=lambda p: (p.class_date, p.issue_date, -p.paper_no), reverse=True)
 			%>
 			% def make_paper(p):
-				<h2>
-					P{{ p.paper_no }}: {{ p.name }}
-					<a href='/paper/{{ p.id }}/edit' title="Edit paper details">
+				<h2 class="clip">
+					<a class="right" href='/paper/{{ p.id }}/edit' title="Edit paper details">
 						<small>examples paper {{ p.sheet_no }}</small>
 					</a>
+					<span class="inner" title="{{ p.name }}">P{{ p.paper_no }}: {{ p.name }}</span>
 				</h2>
 				<div class="progress-multi">
 					% if p.questions:
