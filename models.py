@@ -55,7 +55,10 @@ class Question(Base):
 
 	unlocked_at = Column(DateTime)
 
-	progress_log = relationship(lambda: QuestionProgress, backref='question', cascade='all,delete-orphan')
+	progress_log = relationship(
+		lambda: QuestionProgress,
+		order_by=lambda: QuestionProgress.recorded_at,
+		backref='question', cascade='all,delete-orphan')
 
 
 class QuestionProgress(Base):
