@@ -1,4 +1,6 @@
 <%
+from bottle import request
+
 rebase('layout')
 
 from collections import Counter
@@ -22,7 +24,7 @@ from utils import format_ts_html, states
 				<div class="col-md-4">
 					<h3>Q{{q.number}}</h3>
 					<table class="table table-condensed">
-						% for s in q.progress_log:
+						% for s in q.progress_log_for(request.user):
 							<tr class="{{ next(cls for st, cls, _ in states if st == s.status) }}">
 								<td>
 									{{ s.status.title() }}

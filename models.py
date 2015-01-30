@@ -26,13 +26,20 @@ from sqlalchemy import (
 	UnicodeText,
 )
 from sqlalchemy.orm import relationship, backref, column_property, aliased, join
+from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import select, extract, case
+from sqlalchemy.ext.hybrid import hybrid_method
 from sqlalchemy import func
 
 Base = declarative_base()
 
 CRSID = String(10)
+
+class User(Base):
+	__tablename__ = 'users'
+
+	crsid = Column(CRSID, primary_key=True)
 
 class Paper(Base):
 	__tablename__ = 'papers'
@@ -121,11 +128,35 @@ class Question(Base):
 		(unlocked_at < func.now())
 	)
 
-
-	progress_log = relationship(
+	# dictionary of users to their progress log of this question
+	all_progress_logs = relationship(
 		lambda: QuestionProgress,
 		order_by=lambda: QuestionProgress.recorded_at,
 		backref='question', cascade='all,delete-orphan')
+
+	def progress_log_for(self, user):
+		return (l for l in self.all_progress_logs if l.user == user)
+
+	@hybrid_method
+	def progress_status_for(self, user):
+		s = self.progress_for.get(user)
+		return s.status if s else 'unattempted'
+
+	@progress_status_for.expression
+	def progress_status_for(self, user):
+		return func.coalesce(
+			select([
+				QuestionProgress.status
+			])
+			.where(
+				(QuestionProgress.question_no == Question.number)
+				& (QuestionProgress.paper_id == Question.paper_id)
+				& (QuestionProgress.user_crsid == user.crsid)
+				& QuestionProgress.is_newest
+			)
+			.as_scalar(),
+			"unattempted"
+		)
 
 
 
@@ -135,49 +166,43 @@ class QuestionProgress(Base):
 
 	paper_id    = Column(Integer, nullable=False)
 	question_no = Column(Integer, nullable=False)
+	user_crsid  = Column(CRSID, ForeignKey(User.crsid), nullable=False)
 
 	status = Column(Enum("complete", "needs review", "skipped", "unattempted"))
 	recorded_at = Column(DateTime, nullable=False)
+
+	user = relationship(User, backref='all_progresses')
 
 	__table_args__ = (
 		ForeignKeyConstraint([paper_id,          question_no],
 							 [Question.paper_id, Question.number]),
 	)
 
-
-_QP = aliased(QuestionProgress)
+# indicates if this is the most recent info for the current (question, user)
+# separate definition due to self reference
+__QP = aliased(QuestionProgress)
 QuestionProgress.is_newest = column_property(
 	select([
-		QuestionProgress.recorded_at == func.max(_QP.recorded_at)
+		QuestionProgress.recorded_at == func.max(__QP.recorded_at)
 	])
-	.select_from(_QP)
+	.select_from(__QP)
 	.where(
-		(_QP.question_no == QuestionProgress.question_no) &
-		(_QP.paper_id == QuestionProgress.paper_id)
+		(__QP.question_no == QuestionProgress.question_no) &
+		(__QP.paper_id == QuestionProgress.paper_id) &
+		(__QP.user_crsid == QuestionProgress.user_crsid)
 	)
 )
-Question.progress = relationship(
+
+# a dictionary mapping users to the latest progress for the current (question, user)
+# separate definition due to reference to QuestionProgress, defined after Quetsion
+Question.progress_for = relationship(
 	QuestionProgress,
+	collection_class=attribute_mapped_collection('user'),
 	viewonly=True,
-	uselist=False,
 	primaryjoin=(QuestionProgress.question_no == Question.number)
 			  & (QuestionProgress.paper_id == Question.paper_id)
 			  & QuestionProgress.is_newest
 )
-Question.progress_status = column_property(
-	func.coalesce(
-		select([
-			QuestionProgress.status
-		])
-		.where(
-			(QuestionProgress.question_no == Question.number)
-			& (QuestionProgress.paper_id == Question.paper_id)
-			& QuestionProgress.is_newest
-		)
-		.as_scalar()
-	, "unattempted")
-)
-
 
 
 if 0:

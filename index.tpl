@@ -2,6 +2,11 @@
 from utils import Counter, accumulate, states
 import itertools
 from datetime import datetime, time, timedelta
+from bottle import request
+
+assert request.user
+
+u = request.user
 
 rebase('layout')
 
@@ -12,7 +17,7 @@ now = datetime.now()
 	<%
 	in_progress_papers = [
 		p for p in papers
-		if any(q.progress_status == 'unattempted' for q in p.questions)
+		if any(q.progress_status_for(u) == 'unattempted' for q in p.questions)
 	]
 	in_progress_papers.sort(key=lambda p: p.guessed_progress(now), reverse=True)
 	done_papers = [
@@ -31,7 +36,7 @@ now = datetime.now()
 			% if p.questions:
 				<div class="progress" title="Question progress">
 					<%
-					counts = Counter(q.progress_status for q in p.questions)
+					counts = Counter(q.progress_status_for(u) for q in p.questions)
 					counts = [(counts[k], cls) for k, cls, icon in states if counts[k] and cls ]
 					%>
 					% for i, (cnt, cls) in enumerate(counts):
@@ -79,7 +84,7 @@ now = datetime.now()
 												       name="paper{{ p.id }}-q{{ q.number }}"
 												       id="paper{{ p.id }}-q{{ q.number }}-{{name}}"
 												       value="{{ name }}"
-												       {{'checked' if q.progress_status == name else '' }}/>
+												       {{'checked' if q.progress_status_for(u) == name else '' }}/>
 												<label title="{{ name }}" for="paper{{ p.id }}-q{{ q.number }}-{{next_name}}">
 													<a class="text-{{ class_name or 'muted' }}">
 														<span class="{{ icon }}"></span>

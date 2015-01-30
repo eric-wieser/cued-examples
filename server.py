@@ -17,6 +17,24 @@ app.install(SQLAlchemyPlugin(
 	use_kwargs=True
 ))
 
+
+@app.install
+def get_authed_user(callback):
+	""" A plugin to put the loggedin-user db object at `request.user` """
+	def wrapper(*args, **kwargs):
+		db = kwargs.get('db')
+		if db:
+			crsid = 'efw27'
+			request.user = db.query(m.User).filter_by(crsid=crsid).one()
+		else:
+			request.user = None
+
+		try:
+			return callback(*args, **kwargs)
+		finally:
+			request.user = None
+
+	return wrapper
 @app.route('/')
 @view('index')
 def index(db):
