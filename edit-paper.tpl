@@ -1,15 +1,8 @@
 <%
-from collections import Counter
-from utils import format_ts_html
-
 rebase('layout')
 
-states = [
-	('complete', 'success'),
-	('needs review', 'warning'),
-	('skipped', 'danger'),
-	('unattempted', '')
-]
+from collections import Counter
+from utils import format_ts_html, states
 %>
 <div class="container">
 	<h1>Editing P{{ paper.paper_no }}: {{ paper.name }} <small>example sheet {{ paper.sheet_no }}</small></h1>
@@ -30,7 +23,7 @@ states = [
 					<h3>Q{{q.number}}</h3>
 					<table class="table table-condensed">
 						% for s in q.progress_log:
-							<tr class="{{ dict(states).get(s.status) }}">
+							<tr class="{{ next(cls for st, cls, _ in states if st == s.status) }}">
 								<td>
 									{{ s.status.title() }}
 								</td>
