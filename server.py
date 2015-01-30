@@ -50,25 +50,43 @@ def edit_paper(db, paper_id):
 	return dict(paper=paper)
 
 @app.post('/paper/<paper_id:int>/edit')
-def index(db, paper_id):
-	paper = db.query(m.Paper).filter(m.Paper.id==paper_id).one()
-	qcount = int(request.forms.qcount)
-	assert qcount > 0
+def edit_paper(db, paper_id):
+	if request.forms.qcount:
+		qcount = int(request.forms.qcount)
+		assert qcount > 0
 
-	new_qs = xrange(1, qcount + 1)
-	old_qs = {q.number for q in paper.questions}
+		paper = db.query(m.Paper).filter(m.Paper.id==paper_id).one()
 
-	to_remove = [
-		q for q in paper.questions
-		if q.number not in new_qs
-	]
-	to_add = [
-		m.Question(number=n) for n in new_qs
-		if n not in old_qs
-	]
-	for r in to_remove:
-		db.delete(r)
-	paper.questions += to_add
+		new_qs = xrange(1, qcount + 1)
+		old_qs = {q.number for q in paper.questions}
+
+		to_remove = [
+			q for q in paper.questions
+			if q.number not in new_qs
+		]
+		to_add = [
+			m.Question(number=n) for n in new_qs
+			if n not in old_qs
+		]
+		for r in to_remove:
+			db.delete(r)
+		paper.questions += to_add
+
+	else:
+		for k, v in request.forms.items():
+			mat = re.match(r'^q(\d+)-unlocked$', k)
+			if not mat:
+				continue
+			v = datetime(*(int(x) for x in re.findall(r'\d+', v))) if v else None
+
+			print mat.groups(), v
+
+			q = db.query(m.Question).filter(
+				m.Question.paper_id == paper_id,
+				m.Question.number == mat.group(1)
+			).one()
+			q.unlocked_at = v
+
 
 	redirect(request.url)
 

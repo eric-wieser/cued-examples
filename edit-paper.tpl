@@ -23,28 +23,42 @@ states = [
 					<button type="submit" class="btn btn-primary">Update</button><br />
 					<span class="text-danger">Warning: if there are logs for questions numbered higher than this number, they will be lost!</span>
 				</div>
-			</button>
+			</form>
 			<hr />
 			<h2>Progress log</h2>
-			<div class="row">
-				% for q in paper.questions:
-					<div class="col-md-4">
-						<h3>Q{{q.number}}</h3>
-						<table class="table table-condensed">
-							% for s in q.progress_log:
-								<tr class="{{ dict(states).get(s.status) }}">
+			<form method="POST">
+				<div class="row">
+					% for q in paper.questions:
+						<div class="col-md-4">
+							<h3>Q{{q.number}}</h3>
+							<table class="table table-condensed">
+								% for s in q.progress_log:
+									<tr class="{{ dict(states).get(s.status) }}">
+										<td>
+											{{ s.status.title() }}
+										</td>
+										<td>
+											{{! format_ts_html(s.recorded_at) }}
+										</td>
+									</tr>
+								% end
+								<tr>
 									<td>
-										{{ s.status.title() }}
+										Unlocked
 									</td>
 									<td>
-										{{! format_ts_html(s.recorded_at) }}
+										<input class="form-control"
+										       type="datetime-local"
+										       name="q{{ q.number }}-unlocked"
+										       step="3600"
+										       value="{{q.unlocked_at.isoformat() if q.unlocked_at else ''}}" />
 									</td>
-								</tr>
-							% end
-						</table>
-					</div>
-				% end
-			</div>
+							</table>
+						</div>
+					% end
+				</div>
+				<button type="submit" class="btn btn-primary">Update unlock dates</button><br />
+			</form>
 		</div>
 	</body>
 </html>
