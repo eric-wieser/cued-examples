@@ -1,21 +1,7 @@
 <%
-from collections import Counter
+from utils import Counter, accumulate, states
 from datetime import datetime, time, timedelta
 
-states = [
-	('complete',
-		'success',
-		'glyphicon glyphicon-ok'),
-	('needs review',
-		'warning',
-		'glyphicon glyphicon-question-sign'),
-	('skipped',
-		'danger',
-		'glyphicon glyphicon-remove'),
-	('unattempted',
-		'',
-		'glyphicon glyphicon-unchecked')
-]
 %>
 <html>
 	<head>
