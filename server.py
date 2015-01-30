@@ -26,8 +26,7 @@ def index(db):
 
 
 @app.post('/')
-def index2(db):
-	print "hi",  request.forms.items()
+def index(db):
 	for k, v in request.forms.items():
 		mat = re.match(r'^paper(\d+)-q(\d+)$', k)
 		if not mat:
@@ -46,7 +45,7 @@ def index2(db):
 
 @app.route('/paper/<paper_id:int>/edit')
 @view('edit-paper')
-def index(db, paper_id):
+def edit_paper(db, paper_id):
 	paper = db.query(m.Paper).filter(m.Paper.id==paper_id).one()
 	return dict(paper=paper)
 
