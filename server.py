@@ -24,6 +24,12 @@ def index(db):
 		(m.Paper.issue_date < datetime.now()) | (m.Paper.issue_date == None)
 	).all())
 
+@app.route('/graph')
+@view('graph')
+def index(db):
+	return dict(papers=db.query(m.Paper).filter(
+		(m.Paper.issue_date < datetime.now()) | (m.Paper.issue_date == None)
+	).all())
 
 @app.post('/')
 def index(db):
