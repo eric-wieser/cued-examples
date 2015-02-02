@@ -14,7 +14,7 @@ rebase('layout')
 	<%
 	changes = []
 	end_date = datetime.now()
-	start_date = end_date - timedelta(int(request.params.days) if request.params.days else 7)
+	start_date = end_date - timedelta(float(request.params.days) if request.params.days else 7)
 	for p in papers:
 		for q in p.questions:
 			last_s = 'unattempted'
