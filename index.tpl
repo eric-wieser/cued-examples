@@ -5,6 +5,8 @@ from datetime import datetime, time, timedelta
 
 rebase('layout')
 
+now = datetime.now()
+
 %>
 <div class="container">
 	<h1>Example papers</h1>
@@ -13,6 +15,7 @@ rebase('layout')
 		p for p in papers
 		if any(q.progress_status == 'unattempted' for q in p.questions)
 	]
+	in_progress_papers.sort(key=lambda p: p.guessed_progress(now), reverse=True)
 	done_papers = [
 		p for p in papers if p not in in_progress_papers
 	]
@@ -40,19 +43,12 @@ rebase('layout')
 					% end
 				</div>
 			% end
-			<%
-			if p.issue_date:
-				i = p.issue_date
-			else:
-				i = datetime.now().date() - timedelta(days=14)
-			end
-			spent = (datetime.now() - datetime.combine(i, time())).total_seconds()
-			allocated = (p.class_date - i).total_seconds()
-			progress_t = spent / allocated
-			%>
 			<div class="progress" style="height: 10px" title="Issued {{ p.issue_date or 'last term'}}, due {{ p.class_date }}">
 				<div class="progress-bar progress-bar-striped"
-				     style="width: {{ spent / allocated * 100 }}%; background-color: #777">
+				     style="width: {{ p.unlocked_progress(now) * 100 }}%; background-color: #555">
+				</div>
+				<div class="progress-bar"
+				     style="width: {{ (p.guessed_progress(now) - p.unlocked_progress(now)) * 100 }}%; background-color: #999">
 				</div>
 			</div>
 		</div>
@@ -64,7 +60,13 @@ rebase('layout')
 							<thead>
 								<tr>
 									% for q in p.questions:
-										<th>Q{{ q.number }}</th>
+										% if q.is_unlocked:
+											<th>Q{{ q.number }}</th>
+										% else:
+											<th class="text-muted">
+												Q{{ q.number }}
+											</th>
+										% end
 									% end
 								</tr>
 							</thead>
@@ -100,7 +102,22 @@ rebase('layout')
 			</form>
 		% end
 	% end
-	<h2>In progress</h2>
+	% c = sum(q.is_pending for p in in_progress_papers for q in p.questions)
+	<h2>
+		In progress
+		<%
+		if c == 0:
+			cls = "text-success"
+		elif c < 5:
+			cls = ""
+		elif c < 10:
+			cls = "text-warning"
+		else:
+			cls = "text-danger"
+		end
+		%>
+		<small class="{{cls}}">({{ c }} pending questions)</small>
+	</h2>
 	<div class="row">
 		% for p in in_progress_papers:
 			<div class="col-md-6">

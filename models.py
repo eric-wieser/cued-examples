@@ -1,3 +1,5 @@
+from __future__ import division
+
 import os
 
 import sqlalchemy
@@ -46,6 +48,41 @@ class Paper(Base):
 
 	questions = relationship(lambda: Question, backref='paper')
 
+	def unlocked_questions(self, at):
+		return (
+			q for q in self.questions
+			if q.unlocked_at is not None and q.unlocked_at < at
+		)
+
+	def unlocked_progress(self, at):
+		try:
+			return max(q.number for q in self.unlocked_questions(at)) / len(self.questions)
+		except ValueError:
+			return 0
+
+	def guessed_progress(self, at):
+		from datetime import datetime, timedelta, time
+		try:
+			latest = max(
+				q.unlocked_at for q in self.unlocked_questions(at)
+			)
+		except ValueError:
+			# no unlocked questions - use issue date
+			if self.issue_date:
+				latest = datetime.combine(self.issue_date, time())
+			# if no issue date, assume 2 weeks ago
+			else:
+				latest = at - timedelta(days=14)
+
+		due = datetime.combine(self.class_date, time())
+
+		spent = (at - latest).total_seconds()
+		allocated = (due - latest).total_seconds()
+		progress_t = min(spent / allocated, 1)
+
+		p = self.unlocked_progress(at)
+		return p + progress_t * (1 - p)
+
 
 class Question(Base):
 	__tablename__ = 'questions'
@@ -55,10 +92,25 @@ class Question(Base):
 
 	unlocked_at = Column(DateTime)
 
+	@property
+	def is_pending(self):
+		from datetime import datetime
+		return (
+			self.is_unlocked and
+			self.progress_status == 'unattempted'
+		)
+
+	is_unlocked = column_property(
+		(unlocked_at != None) &
+		(unlocked_at < func.now())
+	)
+
+
 	progress_log = relationship(
 		lambda: QuestionProgress,
 		order_by=lambda: QuestionProgress.recorded_at,
 		backref='question', cascade='all,delete-orphan')
+
 
 
 class QuestionProgress(Base):
