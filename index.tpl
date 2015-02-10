@@ -9,7 +9,6 @@ now = datetime.now()
 
 %>
 <div class="container">
-	<h1>Example papers</h1>
 	<%
 	in_progress_papers = [
 		p for p in papers

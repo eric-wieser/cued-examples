@@ -9,7 +9,6 @@ from utils import accumulate, Counter, states
 rebase('layout')
 %>
 <div class="container">
-<h2>Progress</h2>
 <div>
 	<%
 	changes = []
