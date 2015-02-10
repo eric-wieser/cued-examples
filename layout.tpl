@@ -71,27 +71,31 @@
 			%>
 			<div class="container">
 				<div class="navbar-header">
-					<a class="navbar-brand" href="#">Example papers</a>
+					<a class="navbar-brand" href="/">Example papers</a>
 				</div>
 				<div>
 					<ul class="nav navbar-nav">
-						<li {{!active_if(request.urlparts.path == '/') }}>
-							<a href="/">List</a>
-						</li>
 						% is_graph = request.urlparts.path == '/graph'
 						<li {{!active_if(is_graph, 'dropdown')}}>
 							<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Graph <span class="caret"></span></a>
 							<ul class="dropdown-menu" role="menu">
 								<li {{!active_if(is_graph and request.query.days == '0.041666')}}>
-									<a href="/graph?days=0.041666">Last day</a></li>
+									<a href="/graph?days=0.041666">Last hour</a></li>
+								<li {{!active_if(is_graph and request.query.days == '0.083333')}}>
+									<a href="/graph?days=0.083333">Last two hours</a></li>
+								<li {{!active_if(is_graph and request.query.days == '0.166666')}}>
+									<a href="/graph?days=0.166666">Last four hours</a></li>
 								<li {{!active_if(is_graph and request.query.days == '1')}}>
 									<a href="/graph?days=1">Last day</a></li>
+								<li role="presentation" class="divider"></li>
 								<li {{!active_if(is_graph and request.query.days == '2')}}>
 									<a href="/graph?days=2">Last two days</a></li>
 								<li {{!active_if(is_graph and request.query.days == '7')}}>
 									<a href="/graph?days=7">Last week</a></li>
 								<li {{!active_if(is_graph and request.query.days == '14')}}>
 									<a href="/graph?days=14">Last two weeks</a></li>
+								<li {{!active_if(is_graph and request.query.days == '28')}}>
+									<a href="/graph?days=28">Last four weeks</a></li>
 							</ul>
 						</li>
 					</ul>
