@@ -48,15 +48,28 @@ class Paper(Base):
 
 	questions = relationship(lambda: Question, backref='paper')
 
-	def unlocked_questions(self, at):
+	def _unlocked_questions(self, at):
 		return (
 			q for q in self.questions
 			if q.unlocked_at is not None and q.unlocked_at < at
 		)
 
+	def unlocked_count(self, at):
+		try:
+			return max(q.number for q in self._unlocked_questions(at))
+		except ValueError:
+			return 0
+
+	def unlocked_questions(self, at):
+		m = self.unlocked_count(at)
+		return (
+			q for q in self.questions
+			if q.number <= m
+		)
+
 	def unlocked_progress(self, at):
 		try:
-			return max(q.number for q in self.unlocked_questions(at)) / len(self.questions)
+			return max(q.number for q in self._unlocked_questions(at)) / len(self.questions)
 		except ValueError:
 			return 0
 
@@ -64,7 +77,7 @@ class Paper(Base):
 		from datetime import datetime, timedelta, time
 		try:
 			latest = max(
-				q.unlocked_at for q in self.unlocked_questions(at)
+				q.unlocked_at for q in self._unlocked_questions(at)
 			)
 		except ValueError:
 			# no unlocked questions - use issue date
@@ -75,6 +88,9 @@ class Paper(Base):
 				latest = at - timedelta(days=14)
 
 		due = datetime.combine(self.class_date, time())
+
+		if due < latest:
+			due = latest + timedelta(days=1)
 
 		spent = (at - latest).total_seconds()
 		allocated = (due - latest).total_seconds()

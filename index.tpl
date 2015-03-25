@@ -101,7 +101,15 @@ now = datetime.now()
 			</form>
 		% end
 	% end
-	% c = sum(q.is_pending for p in in_progress_papers for q in p.questions)
+	<%
+	c = sum(
+		len(
+			set(p.unlocked_questions(now))
+			- set(q for q in p.questions if q.progress_status != 'unattempted')
+		)
+		for p in in_progress_papers
+	)
+	%>
 	<h2>
 		In progress
 		<%
